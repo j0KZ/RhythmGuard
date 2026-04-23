@@ -1,0 +1,25 @@
+FROM oven/bun:1-alpine AS base
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-workspace.yaml ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/api/package.json ./packages/api/
+RUN bun install
+
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages ./packages
+COPY packages/shared ./packages/shared
+COPY packages/api ./packages/api
+COPY tsconfig.json ./
+RUN cd packages/shared && bunx tsup src/index.ts --format esm --dts
+RUN cd packages/api && bun run build
+
+FROM base AS runtime
+WORKDIR /app
+COPY --from=build /app/packages/api/dist ./dist
+COPY --from=deps /app/node_modules ./node_modules
+
+EXPOSE 3100
+CMD ["bun", "dist/index.js"]
