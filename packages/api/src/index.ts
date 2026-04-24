@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import healthRouter from './routes/health';
 
 const app = new Hono();
 
 app.use('*', cors());
 
-app.get('/health', (c) => c.json({ status: 'ok', version: '0.1.0' }));
+app.route('/health', healthRouter);
 
 // Routes added in session 4:
 // POST /v1/challenge
